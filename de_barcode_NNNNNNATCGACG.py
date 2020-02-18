@@ -68,3 +68,6 @@ with open(argv[3]) as bf:
 fastq_file_1.close()
 fastq_file_2.close()
 bf.close()
+for lst in barcodes.values():
+	for fn in lst:
+		fn.close()
