@@ -20,7 +20,10 @@ def reformat_read(name_1, seq_1, plus_1, quality_1,name_2, seq_2, plus_2, qualit
 	name_2 = str(name_2,'utf-8')
 	seq_2 = str(seq_2,'utf-8')
 	quality_2 = str(quality_2,'utf-8')
-
+	
+	if name_1.split()[0] != name_2.split()[0]:
+		print name_1, name_2
+		raise Exception("Read 1 is not same name as Read 2")
 	
 	if barcode == seq_1[6:12]:
 		seq_1 = seq_1[12:]
