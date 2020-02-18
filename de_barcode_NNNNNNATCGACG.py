@@ -7,54 +7,65 @@
 # 		python de_barcode.py fq1.gz fq2.gz barcode_file.txt
 ###############################################################################
 
-from sys import argv
 
+import os
+from sys import argv
+import gzip
 file_name = argv[1].split('_')[0]
 
-def read_has_barcode(barcode,read):
-	if barcode in read[7:7+len(barcode)]:
-		read = read[7+len(barcode):]
+def reformat_read(name_1, seq_1, plus_1, quality_1,name_2, seq_2, plus_2, quality_2,barcode):
+	name_1 = str(name_1,'utf-8')
+	seq_1 = str(seq_1,'utf-8')
+	quality_1 = str(quality_1,'utf-8')
+	
+	name_2 = str(name_2,'utf-8')
+	seq_2 = str(seq_2,'utf-8')
+	quality_2 = str(quality_2,'utf-8')
 
-		return read
+	
+	if barcode == seq_1[6:12]:
+		seq_1 = seq_1[12:]
+		quality_1 = quality_1[12:]
+
+		result1 = name_1 + seq_1 + plus_1 + quality_1
+		result2 = name_2 + seq_2 + plus_2 + quality_2
+	else:
+		result1 = ''
+		result2 = ''
+
+	return result1, result2
 
 with open(argv[3]) as bf:
 	for line in bf:
-		
+		barcodes = {}
 		line = line.strip().split("\t")
-		bar = line[1].split("N")[-1]
-		barcodes[line[0]] = [gzip.open(str(file_name) + "." + str(line[0]) + ".R1.fq.gz", 'w'),
-		gzip.open(str(file_name) + "." + str(line[0]) + ".R2.fq.gz", 'w')]
+		bar = line[1]
+		bar_name = line[0]
+		barcodes[line[0]] = [gzip.open(str(file_name) + "." + str(line[0]) + ".R1.fq.gz", 'w'),gzip.open(str(file_name) + "." + str(line[0]) + ".R2.fq.gz", 'w')]
 
-		with my_open(argv[1],'r') as fastq_file_1, my_open(argv[2],'r') as fastq_file_2:
+		with gzip.open(argv[1]) as fastq_file_1, gzip.open(argv[2]) as fastq_file_2:
 			while True:
 				try:
-					name_1 = fastq_file_1.next()
-					seq_1 = fastq_file_1.next()
-					seq_1_re = read_has_barcode(bar,seq_1)
-					fastq_file_1.next()
-					plus = "+\n"
-					quality_1 = fastq_file_1.next()
-					quality_1_re = read_has_barcode(bar,quality_1)
+					name_1 = next(fastq_file_1)
+					seq_1 = next(fastq_file_1)
+					next(fastq_file_1)
+					plus_1 = "+\n"
+					quality_1 = next(fastq_file_1)
 
-					name_2 = fastq_file_2.next()
-					seq_2 = fastq_file_2.next()
-					seq_2_re = read_has_barcode(bar,seq_2)
-					fastq_file_2.next()
-					plus = "+\n"
-					quality_2 = fastq_file_2.next()
-					quality_2_re = read_has_barcode(bar,quality_2)
+					name_2 = next(fastq_file_2)
+					seq_2 = next(fastq_file_2)
+					plus_2 = "+\n"
+					next(fastq_file_2)
+					quality_2 = next(fastq_file_2)
+					result_1, result_2 = reformat_read(name_1, seq_1, plus_1, quality_1,name_2, seq_2, plus_2, quality_2,bar)
+					
+					result_1 = result_1.encode('utf-8')
+					result_2 = result_2.encode('utf-8')
+					barcodes[line[0]][0].write(result_1)
+					barcodes[line[0]][1].write(result_2)
+				except StopIteration:
+					break
 
-					if name_1.split()[0] != name_2.split()[0]:
-						print (name_1, name_2)
-						raise Exception("Read 1 is not same name as Read 2")
-
-					result_1 = str(name_1) + str(seq_1_re) + str(plus) + str(quality_1_re)
-					result_2 = str(name_2) + str(seq_2_re) + str(plus) + str(quality_2_re)
-
-					barcodes[barcode][0].write(result_1)
-					barcodes[barcode][1].write(result_2)
-
-
-
-
-
+fastq_file_1.close()
+fastq_file_2.close()
+bf.close()
