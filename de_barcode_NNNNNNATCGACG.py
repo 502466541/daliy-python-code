@@ -7,11 +7,10 @@
 # 		python de_barcode.py fq1.gz fq2.gz barcode_file.txt
 ###############################################################################
 
-
-import os
+from os.path import basename
 from sys import argv
 import gzip
-file_name = argv[1].split('_')[0]
+file_name = basename(argv[1]).split('_')[0]
 
 def reformat_read(name_1, seq_1, plus_1, quality_1,name_2, seq_2, plus_2, quality_2,barcode):
 	name_1 = str(name_1,'utf-8')
