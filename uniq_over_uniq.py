@@ -22,13 +22,13 @@ over_list = [i for i in f_list if i in r_list]
 f_uniqlist = [i for i in f_list if i not in r_list]
 r_uniqlist = [i for i in r_list if i not in f_list]
 
-with open ( 'a_uniq.txt' , 'w') as f:
+with open ( argv[1]+'_uniq.txt' , 'w') as f:
 	for i in f_uniqlist:
 		f.write(i)
-with open ( 'b_uniq.txt', 'w') as r:
+with open ( argv[2]+'_uniq.txt', 'w') as r:
 	for i in r_uniqlist:
 		r.write(i)
-with open ( 'overlap.txt', 'w') as o:
+with open ( argv[1]+argv[2]+'_overlap.txt', 'w') as o:
 	for i in over_list:
 		o.write(i)
 f.close()
