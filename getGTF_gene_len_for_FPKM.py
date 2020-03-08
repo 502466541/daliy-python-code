@@ -44,5 +44,6 @@ with open (argv[1]) as f:
 for k,v in gene_name.items():
 	intervals = merge(v)
 	length = sum_list(intervals)
-#	print (k,v)
 	print (k,length)
+
+f.close()
