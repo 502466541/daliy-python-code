@@ -1,49 +1,49 @@
-from sys import argv
+#!/usr/bin/env python
+import HTSeq
+import sys, getopt
+import os
 
-def merge(intervals):
-    '''
-    @msg: 合并多个区间
-    @param intervals {list} 一个二维数组，每一项代表一个区间
-    @return: {list}  返回合并后的区间列表
-    '''
+annotation_file = sys.argv[1]
+merge_bedfile = annotation_file + '.merged.bed'
+def create_gene_len(annotation_file):
+	#print('Create '+annotation_file + '.length.txt file')
+	bedfile = annotation_file + '.unsort.bed'
+	sort_bedfile = annotation_file + '.sorted.bed'
+	merge_bedfile = annotation_file + '.merged.bed'
+	gtf_file = HTSeq.GFF_Reader( annotation_file, end_included=True)
+	with open( bedfile, "w") as cleanGTF:
+		number_gene = 0
+		for feature in gtf_file:
+			if feature.type == 'gene':
+				number_gene+=1
+			if feature.type == 'exon':
+				row = [feature.attr['gene_id']+'_'+str(feature.iv.chrom),str(feature.iv.start),str(feature.iv.end),feature.attr['transcript_name'],feature.attr['gene_type'],str(feature.iv.strand)]
 
-    intervals = [sorted(x) for x in intervals]
-    intervals.sort(key=lambda x: x[0])
-    merged = []
-    for interval in intervals:
-        if not merged or merged[-1][1] < interval[0]:
-            merged.append(interval)
-        else:
-             merged[-1][1] = max(merged[-1][1], interval[1])
-    return merged
+				cleanGTF.write('\t'.join(row) + '\n')
+		print ("total gene numbers: ",number_gene)
+	sort_command = 'sort -k1,1 -k2,2n '+ bedfile +' > ' + sort_bedfile
+	os.system(sort_command)
 
-def sum_list(list_val):
-	su = 0
-	for i in list_val:
-		su = su + (int(i[1]) - int(i[0]))
-	
-	return su
+	merge_command = 'bedtools merge -s -c 4,5 -o collapse -delim "|" -i '+sort_bedfile+' > '+merge_bedfile
+	os.system(merge_command)
 
-with open (argv[1]) as f:
-	gene_interval = []
-	gene_name = {}
-	raw_name = ''
-	for line in f:
-		if not line.strip().startswith("#"):
+def cal_gene_len(merge_bedfile):
+
+	gene_len = dict()
+	with open(merge_bedfile) as f:
+		for line in f:
 			line = line.strip().split('\t')
-			if line[2] == "exon":
-				gene_id = line[8].split('\"')[1]
-				if gene_id != raw_name:
-					gene_interval = []
-				gene_interval.append([line[3],line[4]])
-				gene_name[gene_id]=gene_interval
-				raw_name = gene_id
+			name = str(line[0])
+
+			name_length = int(line[2])-int(line[1])
+
+			if name in gene_len:
+				gene_len[name] += name_length
 			else:
-				next;
+				 gene_len[name] = name_length
+	for k,v in gene_len.items():
+		print(k.split('_')[0]+"\t"+str(v))
 
-for k,v in gene_name.items():
-	intervals = merge(v)
-	length = sum_list(intervals)
-	print (k,length)
 
-f.close()
+create_gene_len(sys.argv[1])
+cal_gene_len(merge_bedfile)
